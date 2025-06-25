@@ -73,7 +73,7 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::post('admin-sos-notify', [ API\SosController::class, 'adminSosNotify'] );
 
     Route::post('save-ride-rating', [ API\RideRequestController::class, 'rideRating'] );
-    
+
     Route::post('save-payment', [ API\PaymentController::class, 'paymentSave'] );
 
     Route::get('withdrawrequest-list', [ API\WithdrawRequestController::class, 'getList'] );
@@ -93,11 +93,11 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::get('current-riderequest', [ API\DashboardController::class, 'currentRideRequest'] );
 
     Route::post('earning-list', [ API\PaymentController::class, 'DriverEarningList'] );
-    
+
     Route::post('update-profile', [ API\UserController::class, 'updateProfile']);
     Route::post('change-password',[ API\UserController::class, 'changePassword']);
     Route::post('update-user-status', [ API\UserController::class, 'updateUserStatus']);
-    
+
     Route::post('delete-user-account', [ API\UserController::class, 'deleteUserAccount']);
 
     Route::get('additional-fees-list', [ API\AdditionalFeesController::class, 'getList'] );
@@ -121,3 +121,27 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
 
 Route::get('place-autocomplete-api', [ API\RideRequestController::class, 'placeAutoComplete' ] );
 Route::get('place-detail-api', [ API\RideRequestController::class, 'placeDetail' ] );
+
+Route::get('/test-notification-with-logs/{userId}', function($userId) {
+    $user = User::find($userId);
+
+    if (!$user) {
+        return response()->json(['error' => 'User not found']);
+    }
+
+    // Enviar notificación con logging completo
+    $user->notify(new \App\Notifications\CommonNotification('push_notification', [
+        'id' => 'test-' . time(),
+        'type' => 'test_notification',
+        'subject' => 'test_with_detailed_logs',
+        'message' => 'Testing with comprehensive logging system'
+    ]));
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Notification sent with detailed logging',
+        'user_id' => $user->id,
+        'user_type' => $user->user_type,
+        'check_logs' => 'tail -f storage/logs/laravel.log | grep -E "(🔔|📤|📡)"'
+    ]);
+});
