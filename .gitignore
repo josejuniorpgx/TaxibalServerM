@@ -9,3 +9,8 @@
 error_log
 taxibal-firebase.json
 /.idea
+
+#claudie
+.claude
+/docs/claude-notes.md
+claude-context
