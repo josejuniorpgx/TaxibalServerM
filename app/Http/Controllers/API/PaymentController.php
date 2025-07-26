@@ -35,7 +35,7 @@ class PaymentController extends Controller
                 return json_message_response($message,400);
             }
         }
-        
+
         try {
             DB::beginTransaction();
             $result = Payment::updateOrCreate(['id' => $request->id],$data);
@@ -43,7 +43,7 @@ class PaymentController extends Controller
                 if( $result->payment_type == 'wallet') {
                     $wallet->decrement('total_amount', $result->total_amount );
                     $riderequest = $result->riderequest;
-                
+
                     $currency_code = SettingData('CURRENCY', 'CURRENCY_CODE') ?? 'USD';
                     $currency_data = currencyArray($currency_code);
                     $currency = strtolower($currency_data['code']);
@@ -58,7 +58,7 @@ class PaymentController extends Controller
                         'datetime'  => date('Y-m-d H:i:s'),
                         'ride_request_id' => $result->ride_request_id,
                     ];
-                
+
                     WalletHistory::create($rider_wallet_history);
                 }
             }
@@ -67,9 +67,9 @@ class PaymentController extends Controller
             DB::rollBack();
             return json_custom_response($e);
         }
-        
+
         $ride_request = RideRequest::find($result->ride_request_id);
-                
+
         $status_code = 200;
         $message = __('message.payment_completed');
         if($ride_request->status == 'completed' && $result->payment_status == 'paid')
@@ -83,7 +83,7 @@ class PaymentController extends Controller
         {
             $status_code = 400;
         }
-        
+
         $history_data = [
             'history_type' => 'payment_status_message',
             'payment_status'=> $result->payment_status,
@@ -102,7 +102,7 @@ class PaymentController extends Controller
 
         $per_page = config('constant.PER_PAGE_LIMIT');
         if( $request->has('per_page') && !empty($request->per_page)){
-            
+
             if(is_numeric($request->per_page))
             {
                 $per_page = $request->per_page;
@@ -120,7 +120,7 @@ class PaymentController extends Controller
             'pagination' => json_pagination_response($items),
             'data' => $items,
         ];
-        
+
         return json_custom_response($response);
     }
 
@@ -129,8 +129,8 @@ class PaymentController extends Controller
         $type = $request->type;
         $response = [];
         // $today = Carbon::parse('2022-12-28');
-        $today = Carbon::now();
-        
+        $today = Carbon::now('America/Mexico_City');
+
         if( $type == 'today' ) {
 
             $today_ride_request = RideRequest::myRide()->where('status','completed')
@@ -166,7 +166,7 @@ class PaymentController extends Controller
                             ->myPayment()->where('payment_status', 'paid')
                             ->whereBetween('datetime',[ $from_date, $to_date ])
                             ->get()->toArray();
-            
+
             $payment_collection = collect($week_report);
             $data = [];
             for($i = 0; $i < 7 ; $i++) {
@@ -178,12 +178,12 @@ class PaymentController extends Controller
                 $data[] = [
                     'day' => date('l', strtotime($from_date . ' + ' . $i . 'day')),
                     'amount' => $total_amount,
-                    'date' => date('Y-m-d',strtotime($from_date. ' + ' . $i . 'day')),    
+                    'date' => date('Y-m-d',strtotime($from_date. ' + ' . $i . 'day')),
                 ];
             }
 
             $dashboard_data['weekly_payment_report'] = $data;
-            
+
             $response = [
                 'today_date'        => $today,
                 'from_date'         => $from_date,
@@ -206,10 +206,10 @@ class PaymentController extends Controller
                 ->whereHas('payment', function ($query) use($from_date,$to_date) {
                     $query->where('payment_status','paid')->whereBetween('datetime',[ $from_date, $to_date ]);
                 })->count();
-    
+
             $total_cash_ride = Payment::myPayment()->where('payment_status', 'paid')->where('payment_type', 'cash')->whereBetween('datetime',[ $from_date, $to_date ])->sum('driver_commission');
             $total_wallet_ride = Payment::myPayment()->where('payment_status', 'paid')->where('payment_type', 'wallet')->whereBetween('datetime',[ $from_date, $to_date ])->sum('driver_commission');
-            
+
             $response = [
                 'today_date'        => $today,
                 'from_date'         => $from_date,
